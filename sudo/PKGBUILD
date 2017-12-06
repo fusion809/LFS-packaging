@@ -1,0 +1,30 @@
+pkgname=sudo
+_sudover=1.8.20p2
+pkgver=${_sudover/p/.p}
+pkgrel=1
+pkgdesc="Give certain users the ability to run some commands as root"
+arch=('x86_64')
+url="https://www.sudo.ws/sudo/"
+license=('custom')
+backup=('etc/sudoers')
+install=$pkgname.install
+source=(https://www.sudo.ws/sudo/dist/$pkgname-$_sudover.tar.gz)
+md5sums=('03da8e711caca6fd93e57751bfb74adc')
+
+build() {
+    cd $srcdir/$pkgname-${_sudover}
+    ./configure --prefix=/usr              \
+                --libexecdir=/usr/lib      \
+                --with-secure-path         \
+                --with-all-insults         \
+                --with-env-editor          \
+                --docdir=/usr/share/doc/sudo-${_sudover} \
+                --with-passprompt="[sudo] password for %p: "
+    make -j4
+}
+
+package() {
+    cd $srcdir/$pkgname-${_sudover}
+    make DESTDIR="${pkgdir}" install
+    ln -sfv libsudo_util.so.0.0.0 ${pkgdir}/usr/lib/sudo/libsudo_util.so.0
+}

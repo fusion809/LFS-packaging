@@ -1,0 +1,42 @@
+# Used to build Linux for LFS
+
+pkgname=linux
+pkgver=4.12.7
+pkgrel=1
+arch=('x86_64')
+url="https://www.kernel.org/"
+license=('GPL2')
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
+        "config-driver-less")
+options=('!strip')
+md5sums=('245d1b4dc6e82669aac2c9e6a2dd82fe'
+         '52732655dd38cb46c3bc5528049f7fed')
+
+prepare() {
+    cd $srcdir/$pkgname-$pkgver
+    make mrproper
+    cp $srcdir/config* .config
+    make prepare
+}
+
+build() {
+    cd $srcdir/$pkgname-$pkgver
+    make -j4
+}
+
+package() {
+    cd $srcdir/$pkgname-$pkgver
+    mkdir -p ${pkgdir}/{boot,lib/modules,usr/lib/modules,usr/src}
+    make INSTALL_MOD_PATH="${pkgdir}/usr" modules_install
+    cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz-$pkgver
+    cp System.map $pkgdir/boot/System.map-$pkgver
+    cp .config $pkgdir/boot/config-$pkgver 
+    install -dm755 $pkgdir/etc/modprobe.d
+
+    cat > $pkgdir/etc/modprobe.d/usb.conf << "EOF"
+# Begin /etc/modprobe.d/usb.conf
+install ohci_hcd /sbin/modprobe ehci_hcd ; /sbin/modprobe -i ohci_hcd ; true
+install uhci_hcd /sbin/modprobe ehci_hcd ; /sbin/modprobe -i uhci_hcd ; true
+# End /etc/modprobe.d/usb.conf
+EOF
+}
